@@ -7,87 +7,198 @@
    * Tokens are stored as bare oklch channels so Tailwind can inject an alpha
    * channel via `oklch(var(--token) / <alpha-value>)`. That is what makes
    * utilities like `bg-primary/30` and `border-border/60` work.
+   *
+   * Palette: neutral zinc/slate surfaces + a single indigo accent.
+   * Success / warning / destructive exist only for semantic status.
    */
   :root {
-    --background: 1 0 0;
-    --foreground: 0.141 0.005 285.823;
+    --background: 0.985 0.002 286;
+    --foreground: 0.21 0.006 286;
+
     --card: 1 0 0;
-    --card-foreground: 0.141 0.005 285.823;
+    --card-foreground: 0.21 0.006 286;
+
     --popover: 1 0 0;
-    --popover-foreground: 0.141 0.005 285.823;
-    --primary: 0.21 0.006 285.885;
-    --primary-foreground: 0.985 0 0;
-    --secondary: 0.967 0.001 286.375;
-    --secondary-foreground: 0.21 0.006 285.885;
-    --muted: 0.967 0.001 286.375;
-    --muted-foreground: 0.552 0.016 285.938;
-    --accent: 0.967 0.001 286.375;
-    --accent-foreground: 0.21 0.006 285.885;
-    --destructive: 0.577 0.245 27.325;
-    --destructive-foreground: 0.985 0 0;
-    --border: 0.92 0.004 286.32;
-    --input: 0.92 0.004 286.32;
-    --ring: 0.552 0.016 285.938;
-    --radius: 0.5rem;
+    --popover-foreground: 0.21 0.006 286;
+
+    --primary: 0.51 0.2 277;
+    --primary-foreground: 0.99 0.005 277;
+
+    --secondary: 0.968 0.003 286;
+    --secondary-foreground: 0.21 0.006 286;
+
+    --muted: 0.968 0.003 286;
+    --muted-foreground: 0.554 0.014 286;
+
+    --accent: 0.962 0.008 277;
+    --accent-foreground: 0.32 0.09 277;
+
+    --destructive: 0.577 0.245 27;
+    --destructive-foreground: 0.99 0 0;
+
+    --success: 0.6 0.13 163;
+    --success-foreground: 0.99 0 0;
+
+    --warning: 0.7 0.15 75;
+    --warning-foreground: 0.99 0 0;
+
+    --border: 0.918 0.005 286;
+    --input: 0.918 0.005 286;
+    --ring: 0.51 0.2 277;
+
+    --radius: 0.75rem;
+
+    /*
+     * Without this, the browser/OS paints native widget surfaces — select
+     * option popups, scrollbars, form control internals — in its own default
+     * light theme. On a dark page that means white-on-white option lists.
+     * Declaring it per theme keeps every native control readable.
+     */
+    color-scheme: light;
   }
 
   .dark {
-    --background: 0.141 0.005 285.823;
-    --foreground: 0.985 0 0;
-    --card: 0.21 0.006 285.885;
-    --card-foreground: 0.985 0 0;
-    --popover: 0.21 0.006 285.885;
-    --popover-foreground: 0.985 0 0;
-    --primary: 0.92 0.004 286.32;
-    --primary-foreground: 0.21 0.006 285.885;
-    --secondary: 0.274 0.006 286.033;
-    --secondary-foreground: 0.985 0 0;
-    --muted: 0.274 0.006 286.033;
-    --muted-foreground: 0.705 0.015 286.067;
-    --accent: 0.274 0.006 286.033;
-    --accent-foreground: 0.985 0 0;
-    --destructive: 0.704 0.191 22.216;
-    --destructive-foreground: 0.985 0 0;
-    --border: 0.269 0.006 286.033;
-    --input: 0.269 0.006 286.033;
-    --ring: 0.552 0.016 285.938;
+    --background: 0.145 0.006 286;
+    --foreground: 0.975 0.002 286;
+
+    /* Cards sit a step above the page background for a soft, layered feel. */
+    --card: 0.198 0.007 286;
+    --card-foreground: 0.975 0.002 286;
+
+    --popover: 0.198 0.007 286;
+    --popover-foreground: 0.975 0.002 286;
+
+    --primary: 0.62 0.18 277;
+    --primary-foreground: 0.16 0.02 277;
+
+    --secondary: 0.252 0.008 286;
+    --secondary-foreground: 0.975 0.002 286;
+
+    --muted: 0.252 0.008 286;
+    --muted-foreground: 0.7 0.014 286;
+
+    --accent: 0.28 0.024 277;
+    --accent-foreground: 0.9 0.03 277;
+
+    --destructive: 0.68 0.19 24;
+    --destructive-foreground: 0.99 0 0;
+
+    --success: 0.7 0.14 163;
+    --success-foreground: 0.16 0.02 163;
+
+    --warning: 0.78 0.15 78;
+    --warning-foreground: 0.2 0.03 78;
+
+    --border: 0.278 0.009 286;
+    --input: 0.278 0.009 286;
+    --ring: 0.62 0.18 277;
+
+    color-scheme: dark;
   }
 
   * {
     @apply border-border;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
   }
 
   ::selection {
-    @apply bg-primary/30;
+    @apply bg-primary/25;
+  }
+
+  /* One consistent, high-contrast focus treatment across the whole app. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /*
+   * Native <select> option popups are drawn by the browser, not the page, so
+   * they ignore the classes on the <select> itself. `color-scheme` above
+   * handles most platforms; these explicit colours cover the rest (notably
+   * Android WebKit and older engines) where the popup still renders light.
+   */
+  option {
+    background-color: oklch(var(--popover));
+    color: oklch(var(--popover-foreground));
+  }
+
+  option:checked {
+    background-color: oklch(var(--primary));
+    color: oklch(var(--primary-foreground));
+  }
+
+  option:hover,
+  option:focus {
+    background-color: oklch(var(--accent));
+    color: oklch(var(--accent-foreground));
   }
 }
 
 @layer components {
-  /* subtle grid backdrop used on the landing hero */
-  .bg-grid {
-    background-image:
-      linear-gradient(to right, oklch(1 0 0 / 0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(1 0 0 / 0.04) 1px, transparent 1px);
-    background-size: 56px 56px;
+  /* Slim, unobtrusive scrollbars so long transcripts do not shout. */
+  .scroll-slim {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(var(--border)) transparent;
+  }
+  .scroll-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background-color: oklch(var(--border));
+    border-radius: 9999px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(var(--muted-foreground) / 0.5);
   }
 
-  /* soft glow behind the hero headline */
-  .bg-glow {
-    background: radial-gradient(
-      60% 60% at 50% 0%,
-      oklch(0.7 0.15 260 / 0.22) 0%,
-      transparent 70%
-    );
+  /* Page-width container shared by every route. */
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+
+  /* Frosted surface used by the sticky header and floating composer. */
+  .surface-glass {
+    @apply bg-background/80 backdrop-blur-xl;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Ambient glow behind the hero — pure decoration, hidden from a11y tree. */
+  .hero-glow {
+    background-image: radial-gradient(
+        42rem 22rem at 50% -8%,
+        oklch(var(--primary) / 0.16),
+        transparent 70%
+      ),
+      radial-gradient(
+        30rem 18rem at 88% 8%,
+        oklch(var(--primary) / 0.08),
+        transparent 70%
+      );
+  }
+
+  /* Thin accent bar that reads as a progress/scanline under the header. */
+  .mask-fade-y {
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   }
 }

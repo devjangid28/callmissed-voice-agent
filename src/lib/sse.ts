@@ -9,6 +9,13 @@
  * `data: {...}` envelopes become visible text.
  */
 
+export interface SseToolCallDelta {
+  index?: number
+  id?: string
+  type?: string
+  function?: { name?: string; arguments?: string }
+}
+
 /**
  * Splits an arbitrary stream chunk into SSE payloads, buffering any partial
  * trailing line between reads. Returns the complete `data:` values found and
@@ -40,6 +47,7 @@ export interface SseDelta {
   content: string
   reasoning: string
   finishReason: string | null
+  toolCalls: SseToolCallDelta[]
 }
 
 type StreamChunk = {
@@ -47,6 +55,7 @@ type StreamChunk = {
     delta?: {
       content?: string | null
       reasoning_content?: string | null
+      tool_calls?: SseToolCallDelta[] | null
     } | null
     finish_reason?: string | null
   }>
@@ -74,5 +83,45 @@ export function parseSsePayload(payload: string): SseDelta | null {
     content: choice.delta?.content ?? "",
     reasoning: choice.delta?.reasoning_content ?? "",
     finishReason: choice.finish_reason ?? null,
+    toolCalls: choice.delta?.tool_calls ?? [],
   }
+}
+
+/**
+ * Tool calls arrive as fragments keyed by `index`, each one adding to the
+ * arguments string. This folds them into complete calls.
+ */
+export function accumulateToolCalls(
+  fragments: SseToolCallDelta[]
+): Map<number, { id: string; name: string; arguments: string }> {
+  const accumulated = new Map<
+    number,
+    { id: string; name: string; arguments: string }
+  >()
+
+  const merge = (
+    index: number,
+    id: string | undefined,
+    name: string | undefined,
+    args: string | undefined
+  ) => {
+    const existing = accumulated.get(index)
+    accumulated.set(index, {
+      id: id ?? existing?.id ?? "",
+      name: name ?? existing?.name ?? "",
+      arguments: (existing?.arguments ?? "") + (args ?? ""),
+    })
+  }
+
+  fragments.forEach((fragment, position) => {
+    const index = fragment.index ?? position
+    merge(
+      index,
+      fragment.id,
+      fragment.function?.name,
+      fragment.function?.arguments
+    )
+  })
+
+  return accumulated
 }

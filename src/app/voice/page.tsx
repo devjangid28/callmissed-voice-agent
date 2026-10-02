@@ -1,10 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Loader2, Mic, MicOff, PhoneOff, Sparkles } from "lucide-react"
+import * as React from "react"
+import {
+  Info,
+  Loader2,
+  Mic,
+  MicOff,
+  PhoneOff,
+  RotateCw,
+} from "lucide-react"
 import { toast } from "sonner"
 import {
-  ConnectionState,
   Room,
   RoomEvent,
   Track,
@@ -12,8 +18,8 @@ import {
 } from "livekit-client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { Tooltip } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 type Status = "idle" | "connecting" | "in-call" | "ended"
@@ -25,44 +31,62 @@ type Segment = {
   order: number
 }
 
-const STATUS_COPY: Record<Status, { label: string; hint: string }> = {
+const STATUS_COPY: Record<Status, { label: string; hint: string; tone: string }> = {
   idle: {
     label: "Ready",
-    hint: "Start a call to talk with the voice agent.",
+    hint: "Start a call to talk to the voice agent.",
+    tone: "text-muted-foreground",
   },
-  connecting: { label: "Connecting…", hint: "Negotiating a secure audio stream." },
-  "in-call": { label: "In call", hint: "Speak normally — the agent will respond." },
-  ended: { label: "Call ended", hint: "Start again whenever you like." },
+  connecting: {
+    label: "Connecting…",
+    hint: "Negotiating a secure audio stream.",
+    tone: "text-warning",
+  },
+  "in-call": {
+    label: "In call",
+    hint: "Speak normally — the agent will reply.",
+    tone: "text-success",
+  },
+  ended: {
+    label: "Ended",
+    hint: "Start again whenever you like.",
+    tone: "text-muted-foreground",
+  },
 }
 
+const PIPELINE = ["STT", "LLM", "TTS"] as const
+
 export default function VoicePage() {
-  const [status, setStatus] = useState<Status>("idle")
-  const [systemPrompt, setSystemPrompt] = useState(
+  const [status, setStatus] = React.useState<Status>("idle")
+  const [systemPrompt, setSystemPrompt] = React.useState(
     "You are a friendly, concise voice assistant."
   )
-  const [segments, setSegments] = useState<Segment[]>([])
-  const [micEnabled, setMicEnabled] = useState(true)
-  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [segments, setSegments] = React.useState<Segment[]>([])
+  const [micEnabled, setMicEnabled] = React.useState(true)
+  const [agentSpeaking, setAgentSpeaking] = React.useState(false)
 
-  const roomRef = useRef<Room | null>(null)
-  const segmentsRef = useRef<Map<string, Segment>>(new Map())
-  const counterRef = useRef(0)
-  const audioCtxRef = useRef<AudioContext | null>(null)
-  const rafRef = useRef<number | null>(null)
-  const meterRef = useRef<HTMLDivElement>(null)
-  const transcriptEndRef = useRef<HTMLDivElement>(null)
+  const roomRef = React.useRef<Room | null>(null)
+  const segmentsRef = React.useRef<Map<string, Segment>>(new Map())
+  const orderRef = React.useRef(0)
+  const audioCtxRef = React.useRef<AudioContext | null>(null)
+  const rafRef = React.useRef<number | null>(null)
+  const orbRef = React.useRef<HTMLDivElement>(null)
+  const endRef = React.useRef<HTMLDivElement>(null)
 
-  const cleanupAudio = useCallback(() => {
+  const cleanupAudio = React.useCallback(() => {
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current)
       rafRef.current = null
     }
     void audioCtxRef.current?.close().catch(() => undefined)
     audioCtxRef.current = null
-    if (meterRef.current) meterRef.current.style.height = "0%"
+    if (orbRef.current) {
+      orbRef.current.style.transform = "scale(1)"
+      orbRef.current.style.opacity = "0"
+    }
   }, [])
 
-  const disconnect = useCallback(async () => {
+  const disconnect = React.useCallback(async () => {
     cleanupAudio()
     const room = roomRef.current
     roomRef.current = null
@@ -72,103 +96,103 @@ export default function VoicePage() {
     }
   }, [cleanupAudio])
 
-  useEffect(() => {
-    return () => {
-      void disconnect()
-    }
-  }, [disconnect])
+  React.useEffect(() => () => void disconnect(), [disconnect])
 
-  useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  React.useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [segments])
 
-  /** Drives the mic level bar straight from the DOM to avoid re-renders. */
-  const startMeter = useCallback(
-    (room: Room) => {
-      const publication = room.localParticipant.getTrackPublication(
-        Track.Source.Microphone
-      )
-      const mediaTrack = publication?.track?.mediaStreamTrack
-      if (!mediaTrack || typeof AudioContext === "undefined") return
+  /**
+   * Drives the orb straight from the DOM, avoiding a React render per frame.
+   * The scale is written inline and CSS transitions it, which smooths the
+   * raw 60fps RMS values into a gentle pulse.
+   */
+  const startMeter = React.useCallback((room: Room) => {
+    const publication = room.localParticipant.getTrackPublication(
+      Track.Source.Microphone
+    )
+    const mediaTrack = publication?.track?.mediaStreamTrack
+    if (!mediaTrack || typeof window === "undefined") return
 
-      const AudioCtor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext
-      if (!AudioCtor) return
+    const AudioCtor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext
+    if (!AudioCtor) return
 
-      const ctx = new AudioCtor()
-      audioCtxRef.current = ctx
+    const ctx = new AudioCtor()
+    audioCtxRef.current = ctx
 
-      const source = ctx.createMediaStreamSource(new MediaStream([mediaTrack]))
-      const analyser = ctx.createAnalyser()
-      analyser.fftSize = 512
-      source.connect(analyser)
+    const source = ctx.createMediaStreamSource(new MediaStream([mediaTrack]))
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 512
+    source.connect(analyser)
 
-      const data = new Uint8Array(analyser.frequencyBinCount)
+    const samples = new Uint8Array(analyser.frequencyBinCount)
 
-      const tick = () => {
-        analyser.getByteTimeDomainData(data)
+    const tick = () => {
+      analyser.getByteTimeDomainData(samples)
 
-        let sum = 0
-        for (let i = 0; i < data.length; i++) {
-          const normalized = (data[i] - 128) / 128
-          sum += normalized * normalized
-        }
-        const rms = Math.sqrt(sum / data.length)
-        const percent = Math.min(100, Math.round(rms * 320))
-
-        if (meterRef.current) {
-          meterRef.current.style.height = `${percent}%`
-        }
-
-        rafRef.current = requestAnimationFrame(tick)
+      let sum = 0
+      for (let i = 0; i < samples.length; i++) {
+        const n = (samples[i] - 128) / 128
+        sum += n * n
       }
+      const rms = Math.sqrt(sum / samples.length)
 
-      tick()
-    },
-    []
-  )
+      const orb = orbRef.current
+      if (orb) {
+        orb.style.transform = `scale(${(1 + Math.min(rms * 2.4, 0.32)).toFixed(3)})`
+        orb.style.opacity = String(Math.min(0.35 + rms * 3.5, 0.85))
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
 
-  const start = async () => {
+    tick()
+  }, [])
+
+  const start = React.useCallback(async () => {
     if (status === "connecting" || status === "in-call") return
 
     setStatus("connecting")
     segmentsRef.current = new Map()
+    orderRef.current = 0
     setSegments([])
 
     try {
-      const res = await fetch("/api/voice/session", {
+      const response = await fetch("/api/voice/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ system_prompt: systemPrompt.trim() || undefined }),
+        body: JSON.stringify({
+          system_prompt: systemPrompt.trim() || undefined,
+        }),
       })
 
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data?.error?.message || `Request failed (${res.status})`)
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(
+          data?.error?.message || `Request failed (${response.status})`
+        )
       }
       if (!data?.ws_url || !data?.token) {
         throw new Error("Session response did not include ws_url and token")
       }
 
-      const room = new Room({
-        adaptiveStream: true,
-        dynacast: true,
-      })
+      const room = new Room({ adaptiveStream: true, dynacast: true })
 
+      // livekit-client 2.x emits TranscriptionReceived (not TranscriptionUpdate).
       room.on(
         RoomEvent.TranscriptionReceived,
-        (_segments: TranscriptionSegment[]) => {
+        (incoming: TranscriptionSegment[]) => {
           setSegments((prev) => {
             const next = [...prev]
-            for (const segment of _segments) {
+            for (const segment of incoming) {
               const existing = segmentsRef.current.get(segment.id)
               const entry: Segment = {
                 id: segment.id,
                 text: segment.text,
                 final: segment.final,
-                order: existing?.order ?? counterRef.current++,
+                order: existing?.order ?? orderRef.current++,
               }
               segmentsRef.current.set(segment.id, entry)
 
@@ -182,7 +206,7 @@ export default function VoicePage() {
       )
 
       room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
-        setIsSpeaking(speakers.some((p) => !p.isLocal))
+        setAgentSpeaking(speakers.some((participant) => !participant.isLocal))
       })
 
       room.on(RoomEvent.MediaDevicesError, (error) => {
@@ -195,8 +219,7 @@ export default function VoicePage() {
       })
 
       await room.connect(data.ws_url, data.token)
-
-      // Unlock audio playback from within the user gesture.
+      // Unlocks playback from inside the click gesture.
       await room.startAudio().catch(() => undefined)
       await room.localParticipant.setMicrophoneEnabled(true)
 
@@ -208,20 +231,23 @@ export default function VoicePage() {
     } catch (error) {
       await disconnect()
       setStatus("ended")
-      const message = error instanceof Error ? error.message : "Unknown error"
-      toast.error("Could not start the voice call", { description: message })
+      toast.error("Could not start the voice call", {
+        description:
+          error instanceof Error ? error.message : "Unknown error",
+        action: { label: "Try again", onClick: () => void start() },
+      })
     }
-  }
+  }, [cleanupAudio, disconnect, startMeter, status, systemPrompt])
 
-  const end = async () => {
+  const end = React.useCallback(async () => {
     await disconnect()
     setMicEnabled(false)
-    setIsSpeaking(false)
+    setAgentSpeaking(false)
     setStatus("ended")
     toast.info("Call ended")
-  }
+  }, [disconnect])
 
-  const toggleMic = async () => {
+  const toggleMic = React.useCallback(async () => {
     const room = roomRef.current
     if (!room) return
 
@@ -229,174 +255,274 @@ export default function VoicePage() {
     try {
       await room.localParticipant.setMicrophoneEnabled(next)
       setMicEnabled(next)
-      toast.info(next ? "Microphone on" : "Microphone muted")
     } catch (error) {
       toast.error("Could not change microphone state", {
         description: error instanceof Error ? error.message : undefined,
       })
     }
-  }
-
-  const connectionLabel =
-    roomRef.current?.state === ConnectionState.Connected ? "Connected" : ""
+  }, [micEnabled])
 
   const copy = STATUS_COPY[status]
+  const inCall = status === "in-call"
+  const busy = status === "connecting"
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="overflow-hidden">
-        <CardContent className="flex flex-col items-center gap-6 p-6 sm:p-10">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <span
+    <div className="container-page py-8 sm:py-12">
+      <header className="mx-auto max-w-2xl text-center">
+        <h1 className="text-balance text-3xl font-semibold tracking-[-0.02em] sm:text-4xl">
+          Voice
+        </h1>
+        <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Full-duplex audio over WebRTC, with a live transcript of both sides of
+          the conversation.
+        </p>
+      </header>
+
+      {/* Center stage */}
+      <div className="mt-10 flex flex-col items-center">
+        <div className="relative flex h-56 w-56 items-center justify-center sm:h-64 sm:w-64">
+          {/* Idle: a slow breathing halo. In call: the mic-driven orb. */}
+          {!inCall && !busy && (
+            <>
+              <span
+                aria-hidden
+                className="absolute inset-6 rounded-full border border-primary/30 animate-pulse-ring"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-10 rounded-full border border-primary/20 animate-pulse-ring [animation-delay:900ms]"
+              />
+            </>
+          )}
+
+          <div
+            ref={orbRef}
+            aria-hidden
+            className="absolute inset-16 rounded-full bg-primary/30 blur-xl transition-[transform,opacity] duration-100 ease-out"
+            style={{ transform: "scale(1)", opacity: "0" }}
+          />
+
+          <button
+            type="button"
+            onClick={() => void start()}
+            disabled={inCall || busy}
+            aria-label={
+              busy ? "Connecting" : inCall ? "Call in progress" : "Start voice call"
+            }
+            className={cn(
+              "relative flex h-28 w-28 items-center justify-center rounded-full sm:h-32 sm:w-32",
+              "text-primary-foreground shadow-lift",
+              "transition-[transform,background-color,box-shadow] duration-200 ease-out-expo",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background",
+              inCall || busy
+                ? "cursor-default bg-card text-card-foreground ring-1 ring-border"
+                : "bg-primary hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0"
+            )}
+          >
+            {busy ? (
+              <Loader2 aria-hidden className="h-7 w-7 animate-spin text-muted-foreground" />
+            ) : inCall ? (
+              <Mic
+                aria-hidden
+                className={cn(
+                  "h-7 w-7 transition-colors duration-300",
+                  agentSpeaking ? "text-success" : "text-muted-foreground"
+                )}
+              />
+            ) : (
+              <Mic aria-hidden className="h-7 w-7" />
+            )}
+          </button>
+        </div>
+
+        {/* Status bar */}
+        <div className="mt-2 flex items-center gap-2 text-sm">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full bg-current",
+              copy.tone
+            )}
+            aria-hidden
+          />
+          <p className={cn("font-medium", copy.tone)}>{copy.label}</p>
+          <span aria-hidden className="text-muted-foreground/40">
+            ·
+          </span>
+          <p className="text-muted-foreground">{copy.hint}</p>
+        </div>
+
+        {/* Controls */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {inCall ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => void toggleMic()}
+                aria-pressed={!micEnabled}
+              >
+                {micEnabled ? (
+                  <MicOff aria-hidden className="h-4 w-4" />
+                ) : (
+                  <Mic aria-hidden className="h-4 w-4" />
+                )}
+                {micEnabled ? "Mute" : "Unmute"}
+              </Button>
+
+              <Button variant="destructive" onClick={() => void end()}>
+                <PhoneOff aria-hidden className="h-4 w-4" />
+                End call
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={() => void start()}
+              disabled={busy}
+              size="lg"
+              className="rounded-2xl"
+            >
+              {busy ? (
+                <>
+                  <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+                  Connecting
+                </>
+              ) : (
+                <>
+                  <Mic aria-hidden className="h-4 w-4" />
+                  Start voice call
+                </>
+              )}
+            </Button>
+          )}
+
+          <Tooltip
+            content={
+              <span>
+                Audio runs over WebRTC: your speech is transcribed (STT), sent to
+                the model (LLM), and the reply is spoken back (TTS). Nothing is
+                recorded.
+              </span>
+            }
+          >
+            <button
+              type="button"
+              aria-label="How voice works"
               className={cn(
-                "flex h-20 w-20 items-center justify-center rounded-full border transition-all duration-300",
-                status === "in-call"
-                  ? isSpeaking
-                    ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-500"
-                    : "border-border bg-muted/40 text-muted-foreground"
-                  : "border-border bg-muted/40"
+                "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card/60 text-muted-foreground",
+                "transition-colors duration-200 ease-out-expo hover:bg-accent hover:text-foreground",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               )}
             >
-              {status === "in-call" ? (
-                <Mic className="h-8 w-8" />
-              ) : (
-                <MicOff className="h-8 w-8 text-muted-foreground" />
+              <Info aria-hidden className="h-4 w-4" />
+            </button>
+          </Tooltip>
+        </div>
+
+        {/* Pipeline chips */}
+        <div className="mt-5 flex items-center gap-2">
+          {PIPELINE.map((stage, index) => (
+            <React.Fragment key={stage}>
+              {index > 0 && (
+                <span aria-hidden className="text-muted-foreground/40">
+                  →
+                </span>
               )}
-            </span>
-
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight">{copy.label}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{copy.hint}</p>
-            </div>
-          </div>
-
-          {status === "in-call" && (
-            <div className="flex h-24 w-full max-w-xs items-end justify-center gap-1">
-              <div
-                ref={meterRef}
-                className="w-3 rounded-full bg-emerald-500/80 transition-[height] duration-75"
-                style={{ height: "0%" }}
-              />
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {status === "in-call" ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => void toggleMic()}
-                  className="h-11 rounded-xl"
-                >
-                  {micEnabled ? (
-                    <>
-                      <MicOff className="h-4 w-4" />
-                      Mute
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="h-4 w-4" />
-                      Unmute
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  onClick={() => void end()}
-                  className="h-11 rounded-xl"
-                >
-                  <PhoneOff className="h-4 w-4" />
-                  End call
-                </Button>
-              </>
-            ) : (
-              <Button
-                size="lg"
-                onClick={() => void start()}
-                disabled={status === "connecting"}
-                className="h-11 rounded-xl px-6"
-              >
-                {status === "connecting" ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Connecting…
-                  </>
-                ) : (
-                  <>
-                    <Mic className="h-4 w-4" />
-                    Start Voice Call
-                  </>
+              <span
+                className={cn(
+                  "rounded-lg border px-2 py-1 font-mono text-[11px] font-medium",
+                  inCall
+                    ? "border-primary/30 bg-accent text-accent-foreground"
+                    : "border-border/60 text-muted-foreground"
                 )}
-              </Button>
-            )}
-          </div>
-
-          {status !== "in-call" && (
-            <div className="grid w-full max-w-md gap-1.5">
-              <label
-                htmlFor="voice-prompt"
-                className="text-sm font-medium text-muted-foreground"
               >
-                System prompt
-              </label>
-              <Textarea
-                id="voice-prompt"
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                className="min-h-[64px] resize-none"
-                placeholder="How should the agent behave?"
-              />
+                {stage}
+              </span>
+            </React.Fragment>
+          ))}
+          <span className="ml-1 text-[11px] text-muted-foreground">
+            over WebRTC
+          </span>
+        </div>
+
+        {/* Agent instructions */}
+        {!inCall && !busy && (
+          <div className="mt-8 w-full max-w-md">
+            <label
+              htmlFor="voice-prompt"
+              className="mb-1.5 block text-xs font-medium text-muted-foreground"
+            >
+              Agent instructions
+            </label>
+            <Textarea
+              id="voice-prompt"
+              value={systemPrompt}
+              onChange={(event) => setSystemPrompt(event.target.value)}
+              placeholder="How should the agent behave?"
+              className="min-h-[72px] resize-none"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Transcript */}
+      <section
+        aria-label="Live transcript"
+        className="mt-12 rounded-2xl border border-border/60 bg-card/40 shadow-soft"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-3.5">
+          <h2 className="text-sm font-medium tracking-tight">Transcript</h2>
+          {segments.length > 0 && (
+            <span className="font-mono text-xs tabular-nums text-muted-foreground">
+              {segments.length}
+            </span>
+          )}
+        </div>
+
+        <div
+          className="scroll-slim h-64 overflow-y-auto p-5"
+          role="log"
+          aria-live="polite"
+        >
+          {segments.length === 0 ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Live transcript will appear here…
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {segments.map((segment) => (
+                <p
+                  key={segment.id}
+                  className={cn(
+                    "text-sm leading-relaxed transition-opacity duration-200 ease-out-expo",
+                    segment.final
+                      ? "text-foreground"
+                      : "text-muted-foreground/70"
+                  )}
+                >
+                  {segment.text}
+                </p>
+              ))}
+              <div ref={endRef} />
             </div>
           )}
+        </div>
 
-          {connectionLabel && (
-            <p className="text-xs text-muted-foreground">{connectionLabel}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold tracking-tight">
-              Live transcript
-            </h3>
-            {segments.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {segments.length} segment{segments.length === 1 ? "" : "s"}
-              </span>
-            )}
+        {status === "ended" && (
+          <div className="flex items-center justify-center gap-3 border-t border-border/60 px-5 py-3.5">
+            <p className="text-xs text-muted-foreground">
+              This call has ended.
+            </p>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => void start()}
+              className="text-xs"
+            >
+              <RotateCw aria-hidden className="h-3.5 w-3.5" />
+              Start again
+            </Button>
           </div>
-
-          <div className="h-56 overflow-y-auto rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
-            {segments.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                <Sparkles className="h-4 w-4 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  Live transcript will appear here…
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {segments.map((segment) => (
-                  <p
-                    key={segment.id}
-                    className={cn(
-                      "whitespace-pre-wrap break-words transition-opacity",
-                      segment.final ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {segment.text}
-                  </p>
-                ))}
-                <div ref={transcriptEndRef} />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </section>
     </div>
   )
 }
