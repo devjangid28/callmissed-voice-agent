@@ -28,37 +28,39 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href)
 }
 
-function NavLink({
-  href,
-  label,
-  pathname,
-  className,
-}: {
+type NavLinkProps = {
   href: string
   label: string
   pathname: string
   className?: string
-}) {
-  const active = isActive(pathname, href)
+} & Omit<React.ComponentPropsWithoutRef<typeof Link>, "href" | "className" | "children">
 
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "relative inline-flex h-9 items-center rounded-xl px-3 text-sm font-medium",
-        "transition-colors duration-200 ease-out-expo",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        active
-          ? "bg-accent text-accent-foreground"
-          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-        className
-      )}
-    >
-      {label}
-    </Link>
-  )
-}
+const NavLink = React.forwardRef<HTMLAnchorElement, NavLinkProps>(
+  ({ href, label, pathname, className, ...linkProps }, ref) => {
+    const active = isActive(pathname, href)
+
+    return (
+      <Link
+        ref={ref}
+        href={href}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "relative inline-flex h-9 items-center rounded-xl px-3 text-sm font-medium",
+          "transition-colors duration-200 ease-out-expo",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          active
+            ? "bg-accent text-accent-foreground"
+            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+          className
+        )}
+        {...linkProps}
+      >
+        {label}
+      </Link>
+    )
+  }
+)
+NavLink.displayName = "NavLink"
 
 export function Header() {
   const pathname = usePathname()
@@ -71,16 +73,16 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 surface-glass">
-      <div className="container-page flex h-16 items-center justify-between gap-4">
+      <div className="container-page flex h-14 items-center justify-between gap-3 sm:h-16 sm:gap-4">
         <Link
           href="/"
-          className="group inline-flex items-center gap-2.5 rounded-xl py-1 pr-2 transition-opacity duration-200 ease-out-expo hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="group inline-flex min-w-0 items-center gap-2 rounded-xl py-1 pr-2 transition-opacity duration-200 ease-out-expo hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:gap-2.5"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow transition-transform duration-200 ease-out-expo group-hover:scale-105">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow transition-transform duration-200 ease-out-expo group-hover:scale-105">
             <Waveform aria-hidden className="h-4 w-4" />
           </span>
-          <span className="flex flex-col leading-none">
-            <span className="text-[15px] font-semibold tracking-tight">
+          <span className="flex min-w-0 flex-col leading-none">
+            <span className="truncate text-sm font-semibold tracking-tight sm:text-[15px]">
               Voice Agent
             </span>
             <span className="mt-0.5 hidden text-[11px] font-medium text-muted-foreground sm:block">
@@ -103,7 +105,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
 
           <Sheet open={open} onOpenChange={setOpen}>

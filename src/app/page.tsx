@@ -67,7 +67,7 @@ export default function HomePage() {
             Powered by CallMissed
           </p>
 
-          <h1 className="mt-6 text-balance text-4xl font-semibold tracking-[-0.03em] sm:text-6xl lg:text-7xl">
+          <h1 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.03em] sm:mt-6 sm:text-6xl lg:text-7xl">
             Talk. Create. Call.
           </h1>
 
@@ -76,7 +76,7 @@ export default function HomePage() {
             powered by CallMissed.
           </p>
 
-          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col items-center gap-3 sm:mt-9 sm:flex-row">
             <Link
               href="#modes"
               className="group inline-flex h-11 items-center gap-2 rounded-2xl bg-primary px-6 text-sm font-medium text-primary-foreground shadow-soft transition-[transform,box-shadow,filter] duration-200 ease-out-expo hover:-translate-y-0.5 hover:shadow-glow hover:brightness-110 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -101,7 +101,7 @@ export default function HomePage() {
         <section
           id="modes"
           aria-labelledby="modes-heading"
-          className="mt-20 scroll-mt-24 sm:mt-28"
+          className="mt-12 scroll-mt-24 sm:mt-20 lg:mt-28"
         >
           <h2 id="modes-heading" className="sr-only">
             Demo modes
@@ -140,7 +140,7 @@ export default function HomePage() {
         {/* How it works */}
         <section
           aria-labelledby="how-heading"
-          className="mt-20 rounded-2xl border border-border/60 bg-card/40 p-6 sm:mt-28 sm:p-10"
+          className="mt-12 rounded-2xl border border-border/60 bg-card/40 p-4 sm:mt-20 sm:p-10 lg:mt-28"
         >
           <div className="max-w-2xl">
             <h2
@@ -156,7 +156,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <ol className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-3 sm:gap-8">
+          <ol className="mt-6 grid gap-4 sm:mt-10 sm:grid-cols-3 sm:gap-8">
             {STEPS.map((step, index) => (
               <li key={step.title} className="relative flex gap-4">
                 <span

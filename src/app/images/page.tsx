@@ -337,7 +337,7 @@ export default function ImagesPage() {
               onChange={setModel}
               disabled={loading}
               variant="compact"
-              className="min-w-0 sm:w-56"
+              className="min-w-0 flex-1 sm:w-56 sm:flex-none"
             />
 
             <input
@@ -351,7 +351,7 @@ export default function ImagesPage() {
             />
 
             {reference ? (
-              <div className="animate-rise-in flex items-center gap-2 rounded-xl border border-border/70 bg-card/70 py-1 pl-1 pr-1.5">
+              <div className="animate-rise-in flex min-w-0 items-center gap-2 rounded-xl border border-border/70 bg-card/70 py-1 pl-1 pr-1.5">
                 <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -382,7 +382,7 @@ export default function ImagesPage() {
                   disabled={loading}
                   aria-label="Remove reference image"
                   className={cn(
-                    "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground",
+                    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground",
                     "transition-colors duration-200 ease-out-expo hover:bg-accent hover:text-foreground",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     "disabled:pointer-events-none disabled:opacity-40"
@@ -412,7 +412,7 @@ export default function ImagesPage() {
             onClick={() => void generate()}
             disabled={loading || describing || !prompt.trim()}
             size="lg"
-            className="h-11 rounded-2xl sm:w-44"
+            className="h-11 w-full rounded-2xl sm:w-44 sm:flex-none"
           >
             {loading ? (
               <>
@@ -460,7 +460,7 @@ export default function ImagesPage() {
               <span className="text-xs font-medium">Advanced options</span>
             </AccordionTrigger>
             <AccordionContent className="px-1 pb-1 pt-2">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                 <div className="grid gap-3 sm:col-span-2">
                   <Field label="Negative prompt" htmlFor="negative">
                     <Input
@@ -471,7 +471,7 @@ export default function ImagesPage() {
                     />
                   </Field>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <Field label="Seed" htmlFor="seed">
                       <Input
                         id="seed"
@@ -553,7 +553,7 @@ export default function ImagesPage() {
             role="status"
             aria-label="Generating images"
             className={cn(
-              "grid gap-4 sm:grid-cols-2 lg:grid-cols-3",
+              "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3",
               count > 1 && "lg:grid-cols-3"
             )}
           >
@@ -612,7 +612,7 @@ export default function ImagesPage() {
               </p>
             </div>
 
-            <div className="mx-auto mt-6 grid max-w-2xl gap-2 sm:grid-cols-3">
+            <div className="mx-auto mt-4 grid max-w-2xl gap-2 sm:mt-6 sm:grid-cols-3">
               {STARTERS.map((starter) => (
                 <button
                   key={starter}
@@ -654,7 +654,7 @@ export default function ImagesPage() {
 
         {images.length > 0 && (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
               {images.map((image) => (
                 <figure
                   key={image.id}

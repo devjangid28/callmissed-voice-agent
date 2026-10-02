@@ -64,7 +64,7 @@ export function ConversationList({
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
-      <div className="shrink-0 p-3">
+      <div className="shrink-0 p-2 sm:p-3">
         <button
           type="button"
           onClick={onCreate}
@@ -80,7 +80,7 @@ export function ConversationList({
         </button>
       </div>
 
-      <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+      <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-2 pb-2 sm:px-3 sm:pb-3">
         {conversations.length === 0 ? (
           <p className="px-1 py-6 text-center text-xs leading-relaxed text-muted-foreground">
             No conversations yet.
@@ -159,7 +159,7 @@ export function ConversationList({
                     )}
 
                     {!isEditing && (
-                      <span className="flex shrink-0 items-center">
+                      <span className="flex shrink-0 items-center gap-0.5">
                         <IconAction
                           label={`Rename ${conversation.title}`}
                           onClick={() =>
@@ -203,11 +203,11 @@ function IconAction({
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground",
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground",
         "opacity-0 transition-[opacity,background-color,color] duration-200 ease-out-expo",
         "hover:bg-background hover:text-foreground hover:opacity-100",
         "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        "group-hover/row:opacity-100"
+        "group-hover/row:opacity-100 sm:h-7 sm:w-7"
       )}
     >
       {children}

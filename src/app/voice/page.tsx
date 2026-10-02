@@ -280,7 +280,7 @@ export default function VoicePage() {
 
       {/* Center stage */}
       <div className="mt-10 flex flex-col items-center">
-        <div className="relative flex h-56 w-56 items-center justify-center sm:h-64 sm:w-64">
+        <div className="relative flex h-48 w-48 items-center justify-center sm:h-64 sm:w-64">
           {/* Idle: a slow breathing halo. In call: the mic-driven orb. */}
           {!inCall && !busy && (
             <>
@@ -310,7 +310,7 @@ export default function VoicePage() {
               busy ? "Connecting" : inCall ? "Call in progress" : "Start voice call"
             }
             className={cn(
-              "relative flex h-28 w-28 items-center justify-center rounded-full sm:h-32 sm:w-32",
+              "relative flex h-24 w-24 items-center justify-center rounded-full sm:h-32 sm:w-32",
               "text-primary-foreground shadow-lift",
               "transition-[transform,background-color,box-shadow] duration-200 ease-out-expo",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background",
@@ -320,23 +320,23 @@ export default function VoicePage() {
             )}
           >
             {busy ? (
-              <Loader2 aria-hidden className="h-7 w-7 animate-spin text-muted-foreground" />
+              <Loader2 aria-hidden className="h-6 w-6 animate-spin text-muted-foreground sm:h-7 sm:w-7" />
             ) : inCall ? (
               <Mic
                 aria-hidden
                 className={cn(
-                  "h-7 w-7 transition-colors duration-300",
+                  "h-6 w-6 transition-colors duration-300 sm:h-7 sm:w-7",
                   agentSpeaking ? "text-success" : "text-muted-foreground"
                 )}
               />
             ) : (
-              <Mic aria-hidden className="h-7 w-7" />
+              <Mic aria-hidden className="h-6 w-6 sm:h-7 sm:w-7" />
             )}
           </button>
         </div>
 
         {/* Status bar */}
-        <div className="mt-2 flex items-center gap-2 text-sm">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm">
           <span
             className={cn(
               "h-1.5 w-1.5 rounded-full bg-current",
@@ -352,7 +352,7 @@ export default function VoicePage() {
         </div>
 
         {/* Controls */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {inCall ? (
             <>
               <Button
@@ -418,7 +418,7 @@ export default function VoicePage() {
         </div>
 
         {/* Pipeline chips */}
-        <div className="mt-5 flex items-center gap-2">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           {PIPELINE.map((stage, index) => (
             <React.Fragment key={stage}>
               {index > 0 && (
@@ -438,14 +438,14 @@ export default function VoicePage() {
               </span>
             </React.Fragment>
           ))}
-          <span className="ml-1 text-[11px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             over WebRTC
           </span>
         </div>
 
         {/* Agent instructions */}
         {!inCall && !busy && (
-          <div className="mt-8 w-full max-w-md">
+          <div className="mt-6 w-full max-w-md sm:mt-8">
             <label
               htmlFor="voice-prompt"
               className="mb-1.5 block text-xs font-medium text-muted-foreground"
@@ -466,9 +466,9 @@ export default function VoicePage() {
       {/* Transcript */}
       <section
         aria-label="Live transcript"
-        className="mt-12 rounded-2xl border border-border/60 bg-card/40 shadow-soft"
+        className="mt-8 rounded-2xl border border-border/60 bg-card/40 shadow-soft sm:mt-12"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-3.5">
+        <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3 sm:px-5 sm:py-3.5">
           <h2 className="text-sm font-medium tracking-tight">Transcript</h2>
           {segments.length > 0 && (
             <span className="font-mono text-xs tabular-nums text-muted-foreground">
@@ -478,7 +478,7 @@ export default function VoicePage() {
         </div>
 
         <div
-          className="scroll-slim h-64 overflow-y-auto p-5"
+          className="scroll-slim h-64 overflow-y-auto p-4 sm:p-5"
           role="log"
           aria-live="polite"
         >
@@ -507,7 +507,7 @@ export default function VoicePage() {
         </div>
 
         {status === "ended" && (
-          <div className="flex items-center justify-center gap-3 border-t border-border/60 px-5 py-3.5">
+          <div className="flex items-center justify-center gap-3 border-t border-border/60 px-4 py-3 sm:px-5 sm:py-3.5">
             <p className="text-xs text-muted-foreground">
               This call has ended.
             </p>

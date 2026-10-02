@@ -11,7 +11,7 @@ const PRODUCT_LINKS = [
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-border/60">
-      <div className="container-page flex flex-col items-center justify-between gap-4 py-8 sm:flex-row sm:items-start">
+      <div className="container-page flex flex-col items-center justify-between gap-3 py-6 sm:flex-row sm:items-start sm:gap-4 sm:py-8">
         <div className="flex flex-col items-center gap-1 text-center sm:items-start sm:text-left">
           <p className="text-xs text-muted-foreground">
             Powered by{" "}

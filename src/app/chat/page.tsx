@@ -517,7 +517,7 @@ export default function ChatPage() {
         <div className="flex min-w-0 flex-col gap-3">
           {/* Top bar */}
           <div className="rounded-2xl border border-border/60 bg-card/60 p-3 shadow-soft">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -535,12 +535,12 @@ export default function ChatPage() {
                   onChange={setModel}
                   disabled={streaming}
                   variant="compact"
-                  className="min-w-0 flex-1 sm:w-56 sm:flex-none"
+                  className="min-w-0 flex-1 lg:w-56 lg:flex-none"
                 />
               </div>
 
-              <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-5">
-                <div className="flex items-center gap-2.5 sm:w-40">
+              <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center lg:justify-end lg:gap-5">
+                <div className="flex items-center gap-2.5 lg:w-40">
                   <label
                     htmlFor="temperature"
                     className="shrink-0 text-xs font-medium text-muted-foreground"
@@ -560,7 +560,7 @@ export default function ChatPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-4 sm:gap-5">
+                <div className="flex items-center gap-4 lg:gap-5">
                   <ControlToggle
                     id="json-mode"
                     label="JSON"
@@ -648,7 +648,7 @@ export default function ChatPage() {
               )}
 
               <div className="rounded-2xl border border-border/70 bg-background/60 shadow-soft transition-[border-color,box-shadow] duration-200 ease-out-expo focus-within:border-primary/50 focus-within:shadow-lift">
-                <div className="flex items-center gap-1 border-b border-border/60 px-2.5 py-1.5">
+                <div className="flex items-center gap-1 border-b border-border/60 px-2 py-1.5 sm:px-2.5">
                   <ToolbarButton
                     active={showSystem}
                     onClick={() => setShowSystem((value) => !value)}
@@ -656,12 +656,12 @@ export default function ChatPage() {
                     aria-controls="system-prompt"
                   >
                     <Settings2 aria-hidden className="h-3.5 w-3.5" />
-                    System
+                    <span className="hidden sm:inline">System</span>
                   </ToolbarButton>
 
                   <ToolbarButton onClick={() => router.push("/images")}>
                     <Sparkles aria-hidden className="h-3.5 w-3.5" />
-                    Images
+                    <span className="hidden sm:inline">Images</span>
                   </ToolbarButton>
 
                   {!empty && (
@@ -672,7 +672,7 @@ export default function ChatPage() {
                       aria-label="Clear conversation"
                       title="Clear conversation"
                       className={cn(
-                        "ml-auto inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground",
+                        "ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground",
                         "transition-colors duration-200 ease-out-expo hover:bg-accent hover:text-accent-foreground",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         "disabled:pointer-events-none disabled:opacity-40"
@@ -686,7 +686,7 @@ export default function ChatPage() {
                 {showSystem && (
                   <div
                     id="system-prompt"
-                    className="border-b border-border/60 px-3 pb-1 pt-2"
+                    className="border-b border-border/60 px-2 pb-1 pt-2 sm:px-3"
                   >
                     <label
                       htmlFor="system"
@@ -716,12 +716,12 @@ export default function ChatPage() {
                 />
               </div>
 
-              <div className="mt-2 flex items-center justify-between gap-3 px-1">
-                <p className="text-[11px] text-muted-foreground">
-                  Enter to send · Shift + Enter for a new line
+              <div className="mt-2 flex items-center justify-between gap-2 px-1">
+                <p className="text-[10px] text-muted-foreground sm:text-[11px]">
+                  Enter to send · Shift + Enter for new line
                 </p>
                 {streaming && stats && (
-                  <p className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                  <p className="font-mono text-[10px] tabular-nums text-muted-foreground sm:text-[11px]">
                     {stats.tps} tok/s · {stats.chars} chars
                   </p>
                 )}
@@ -760,7 +760,7 @@ function ToolbarButton({
     <button
       type="button"
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-medium",
+        "inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium sm:h-7",
         "transition-colors duration-200 ease-out-expo",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
@@ -823,7 +823,7 @@ function EmptyState({ onPick }: { onPick: (starter: string) => void }) {
         </span>
       </p>
 
-      <div className="mt-6 grid gap-2 sm:grid-cols-2">
+      <div className="mt-4 grid gap-2 sm:mt-6 sm:grid-cols-2">
         {STARTERS.map((starter) => (
           <button
             key={starter}
